@@ -6,7 +6,7 @@ PROPOSAL_CONFIG = proposal_optimization_config();
 fprintf('已載入 Proposal 優化配置 v%s\n', PROPOSAL_CONFIG.version);
 
 %% === 優化參數設置：強化分割效果與方法差異 ===
-simulation_times = 40;
+simulation_times = 3;
 time_slots       = 100;
 run_algo_fq      = 10;
 new_task_fq      = 8;
@@ -108,7 +108,7 @@ for sim = 1:simulation_times
 
         for nED_idx = 1:length(totalEDs_set)
             nED = totalEDs_set(nED_idx);
-            fprintf('  ED數量: %d → ', nED);
+            fprintf('  UE數量: %d → ', nED);
 
             % === 統一環境初始化 ===
             ES_set_base = deploy_ES(max_storage, core_nums, core_rate);
@@ -266,10 +266,10 @@ for bit_idx = 1:length(bits_per_task_list)
     display_results_integrated(...
         divisible_task_ratios, totalEDs_set, ...
         avg_props, avg_tsms, avg_bats, ...
+        avg_success_props, avg_success_tsms, avg_success_bats, ...
         avg_delay_props, avg_delay_tsms, avg_delay_bats, ...
         avg_energy_props, avg_energy_tsms, avg_energy_bats, ...
         avg_eff_props, avg_eff_tsms, avg_eff_bats, ...
-        avg_success_props, avg_success_tsms, avg_success_bats, ...
         total_tasks_success_prop, total_tasks_success_tsm, ...
         total_tasks_success_bat, total_tasks_generated);
 
@@ -390,12 +390,12 @@ end
 
 function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
                                     avg_props, avg_tsms, avg_bats, ...
+                                    avg_success_props, avg_success_tsms, avg_success_bats, ...
                                     avg_delay_props, avg_delay_tsms, avg_delay_bats, ...
                                     avg_energy_props, avg_energy_tsms, avg_energy_bats, ...
                                     avg_eff_props, avg_eff_tsms, avg_eff_bats, ...
-                                    avg_success_props, avg_success_tsms, avg_success_bats, ...
                                     varargin)
-    % display_results_integrated：以纯文本方式打印"完成率 + 成功任務數 + 延迟 + 能耗"結果
+    % display_results_integrated：以纯文本方式打印"完成率 + 延迟 + 能耗"结果
     
     % 先从 varargin 里分配"成功任务数/总生成任务数"这 4 个可选向量
     if length(varargin) == 4
@@ -420,15 +420,8 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             p_rate = avg_props(r,i) * 100;    % Proposal 完成率（%）
             t_rate = avg_tsms(r,i)  * 100;    % TSM 完成率（%）
             b_rate = avg_bats(r,i)  * 100;    % BAT 完成率（%）
-            fprintf('ED數量 = %5d → TSM: %6.2f%%, Proposal: %6.2f%%, BAT: %6.2f%%\n', ...
+            fprintf('UE數量 = %5d → TSM: %6.2f%%, Proposal: %6.2f%%, BAT: %6.2f%%\n', ...
                     ed, t_rate, p_rate, b_rate);
-
-            % 額外輸出各方法成功任務數
-            p_success = avg_success_props(r,i);
-            t_success = avg_success_tsms(r,i);
-            b_success = avg_success_bats(r,i);
-            fprintf('              成功任務數: TSM=%d, Proposal=%d, BAT=%d\n', ...
-                    round(t_success), round(p_success), round(b_success));
         end
         
         % 如果有传进"成功任务数/总生成任务数"，就打印
@@ -441,10 +434,38 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             fprintf('[TSM]      成功任務數：%d / %d\n', sum_tsm,  tot_gen);
             fprintf('[BAT]      成功任務數：%d / %d\n', sum_bat,  tot_gen);
         end
-        
+
         fprintf('\n');
     end
-    
+
+    % 1.5) 平均成功任務數 (依可分割比例)
+    fprintf('=== 平均成功任務數 (依可分割比例) ===\n');
+    for r = 1:length(divisible_task_ratios)
+        ratio = divisible_task_ratios(r);
+        fprintf('--- Divisible Task Ratio: %.2f ---\n', ratio);
+        for i = 1:length(totalEDs_set)
+            ed = totalEDs_set(i);
+            p_cnt = avg_success_props(r,i);
+            t_cnt = avg_success_tsms(r,i);
+            b_cnt = avg_success_bats(r,i);
+            fprintf('UE數量 = %5d → TSM: %8.2f, Proposal: %8.2f, BAT: %8.2f\n', ...
+                    ed, t_cnt, p_cnt, b_cnt);
+        end
+        fprintf('\n');
+    end
+
+    % 1.6) 各UE數量的平均成功任務數 (跨可分割比例)
+    fprintf('=== 各UE數量平均成功任務數 ===\n');
+    avg_by_ed_prop = mean(avg_success_props, 1, 'omitnan');
+    avg_by_ed_tsm  = mean(avg_success_tsms, 1, 'omitnan');
+    avg_by_ed_bat  = mean(avg_success_bats, 1, 'omitnan');
+    for i = 1:length(totalEDs_set)
+        ed = totalEDs_set(i);
+        fprintf('UE數量 = %5d → TSM: %8.2f, Proposal: %8.2f, BAT: %8.2f\n', ...
+                ed, avg_by_ed_tsm(i), avg_by_ed_prop(i), avg_by_ed_bat(i));
+    end
+    fprintf('\n');
+
     % 2) 平均延遲
     fprintf('=== 平均延遲結果（單位 ms）===\n');
     for r = 1:length(divisible_task_ratios)
@@ -455,7 +476,7 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             p_delay = avg_delay_props(r,i) * 1000;   % Proposal 延遲 (秒→毫秒)
             t_delay = avg_delay_tsms(r,i)  * 1000;   % TSM 延遲
             b_delay = avg_delay_bats(r,i)  * 1000;   % BAT 延遲
-            fprintf('ED數量 = %5d → TSM: %6.2f ms, Proposal: %6.2f ms, BAT: %6.2f ms\n', ...
+            fprintf('UE數量 = %5d → TSM: %6.2f ms, Proposal: %6.2f ms, BAT: %6.2f ms\n', ...
                     ed, t_delay, p_delay, b_delay);
         end
         fprintf('\n');
@@ -471,7 +492,7 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             p_e = avg_energy_props(r,i);   % Proposal 總能耗
             t_e = avg_energy_tsms(r,i);    % TSM 總能耗
             b_e = avg_energy_bats(r,i);    % BAT 總能耗
-            fprintf('ED數量 = %5d → TSM: %8.2f J, Proposal: %8.2f J, BAT: %8.2f J\n', ...
+            fprintf('UE數量 = %5d → TSM: %8.2f J, Proposal: %8.2f J, BAT: %8.2f J\n', ...
                     ed, t_e, p_e, b_e);
         end
         fprintf('\n');
@@ -487,7 +508,7 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             p_eff = avg_eff_props(r,i);
             t_eff = avg_eff_tsms(r,i);
             b_eff = avg_eff_bats(r,i);
-            fprintf('ED數量 = %5d → TSM: %8.2f, Proposal: %8.2f, BAT: %8.2f\n', ...
+            fprintf('UE數量 = %5d → TSM: %8.2f, Proposal: %8.2f, BAT: %8.2f\n', ...
                     ed, t_eff, p_eff, b_eff);
         end
         fprintf('\n');
@@ -518,7 +539,7 @@ function create_integrated_plots(totalEDs_set, divisible_task_ratios, avg_tsms, 
         plot(totalEDs_set, avg_props(ratio_idx, :)*100, '-s', 'LineWidth', 2, 'Color', colors{2}, 'MarkerSize', 6);
         plot(totalEDs_set, avg_bats(ratio_idx, :)*100, '-^', 'LineWidth', 2, 'Color', colors{3}, 'MarkerSize', 6);
         legend(method_names, 'Location', 'best', 'FontSize', 10);
-        xlabel('ED數量', 'FontSize', 11);
+        xlabel('UE數量', 'FontSize', 11);
         ylabel('完成率 (%)', 'FontSize', 11);
         title('任務完成率', 'FontSize', 12);
         grid on;
@@ -531,7 +552,7 @@ function create_integrated_plots(totalEDs_set, divisible_task_ratios, avg_tsms, 
         plot(totalEDs_set, avg_delay_props(ratio_idx, :)*1000, '-s', 'LineWidth', 2, 'Color', colors{2}, 'MarkerSize', 6);
         plot(totalEDs_set, avg_delay_bats(ratio_idx, :)*1000, '-^', 'LineWidth', 2, 'Color', colors{3}, 'MarkerSize', 6);
         legend(method_names, 'Location', 'best', 'FontSize', 10);
-        xlabel('ED數量', 'FontSize', 11);
+        xlabel('UE數量', 'FontSize', 11);
         ylabel('平均延遲 (ms)', 'FontSize', 11);
         title('平均延遲', 'FontSize', 12);
         grid on;
@@ -543,7 +564,7 @@ function create_integrated_plots(totalEDs_set, divisible_task_ratios, avg_tsms, 
         plot(totalEDs_set, avg_energy_props(ratio_idx, :), '-s', 'LineWidth', 2, 'Color', colors{2}, 'MarkerSize', 6);
         plot(totalEDs_set, avg_energy_bats(ratio_idx, :), '-^', 'LineWidth', 2, 'Color', colors{3}, 'MarkerSize', 6);
         legend(method_names, 'Location', 'best', 'FontSize', 10);
-        xlabel('ED數量', 'FontSize', 11);
+        xlabel('UE數量', 'FontSize', 11);
         ylabel('總能耗 (J)', 'FontSize', 11);
         title('總能耗', 'FontSize', 12);
         grid on;
@@ -562,7 +583,7 @@ function create_integrated_plots(totalEDs_set, divisible_task_ratios, avg_tsms, 
         plot(totalEDs_set, avg_props(ratio_idx, :)*100, '-s', 'LineWidth', 2, 'Color', colors{2}, 'MarkerSize', 6);
         plot(totalEDs_set, avg_bats(ratio_idx, :)*100, '-^', 'LineWidth', 2, 'Color', colors{3}, 'MarkerSize', 6);
         legend(method_names, 'Location', 'best', 'FontSize', 10);
-        xlabel('ED數量', 'FontSize', 11);
+        xlabel('UE數量', 'FontSize', 11);
         ylabel('完成率 (%)', 'FontSize', 11);
         title(sprintf('任務完成率 - %.0f%%可分割', divisible_task_ratios(ratio_idx)*100), 'FontSize', 12);
         grid on;
@@ -577,7 +598,7 @@ function create_integrated_plots(totalEDs_set, divisible_task_ratios, avg_tsms, 
         plot(totalEDs_set, avg_delay_props(ratio_idx, :)*1000, '-s', 'LineWidth', 2, 'Color', colors{2}, 'MarkerSize', 6);
         plot(totalEDs_set, avg_delay_bats(ratio_idx, :)*1000, '-^', 'LineWidth', 2, 'Color', colors{3}, 'MarkerSize', 6);
         legend(method_names, 'Location', 'best', 'FontSize', 10);
-        xlabel('ED數量', 'FontSize', 11);
+        xlabel('UE數量', 'FontSize', 11);
         ylabel('平均延遲 (ms)', 'FontSize', 11);
         title(sprintf('平均延遲 - %.0f%%可分割', divisible_task_ratios(ratio_idx)*100), 'FontSize', 12);
         grid on;
@@ -591,7 +612,7 @@ function create_integrated_plots(totalEDs_set, divisible_task_ratios, avg_tsms, 
         plot(totalEDs_set, avg_energy_props(ratio_idx, :), '-s', 'LineWidth', 2, 'Color', colors{2}, 'MarkerSize', 6);
         plot(totalEDs_set, avg_energy_bats(ratio_idx, :), '-^', 'LineWidth', 2, 'Color', colors{3}, 'MarkerSize', 6);
         legend(method_names, 'Location', 'best', 'FontSize', 10);
-        xlabel('ED數量', 'FontSize', 11);
+        xlabel('UE數量', 'FontSize', 11);
         ylabel('總能耗 (J)', 'FontSize', 11);
         title(sprintf('總能耗 - %.0f%%可分割', divisible_task_ratios(ratio_idx)*100), 'FontSize', 12);
         grid on;

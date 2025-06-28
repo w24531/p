@@ -41,9 +41,9 @@ function create_energy_efficiency_plots(totalEDs_set, divisible_task_ratios, avg
 
         % 设置图形属性
         grid on;
-        xlabel('終端設備數量', 'FontSize', 14);
+        xlabel('UE數量', 'FontSize', 14);
         ylabel('能效比 (bit/J)', 'FontSize', 14);
-        title(sprintf('可分割任務比例 %.0f%%的能效比', divisible_task_ratios(r)*100), 'FontSize', 16);
+        title(sprintf('能效比 - %.0f%%可分割', divisible_task_ratios(r)*100), 'FontSize', 16);
         legend(method_names, 'Location', 'best', 'FontSize', 12, 'Box', 'off');
 
         % 添加网格
@@ -84,7 +84,7 @@ function create_energy_efficiency_plots(totalEDs_set, divisible_task_ratios, avg
 
         % 设置图形属性
         grid on;
-        xlabel('終端設備數量', 'FontSize', 11);
+        xlabel('UE數量', 'FontSize', 11);
         ylabel('能效比 (bit/J)', 'FontSize', 11);
         title(sprintf('可分割任務比例 %.0f%%', divisible_task_ratios(r)*100), 'FontSize', 12);
 
@@ -147,7 +147,7 @@ function create_energy_efficiency_plots(totalEDs_set, divisible_task_ratios, avg
         grid on;
         xlabel('可分割任務比例', 'FontSize', 12);
         ylabel('能效比 (bit/J)', 'FontSize', 12);
-        title(sprintf('%d個終端設備下的能效比比較', totalEDs_set(ed_idx)), 'FontSize', 14);
+        title(sprintf('%d個UE下的能效比比較', totalEDs_set(ed_idx)), 'FontSize', 14);
         legend(method_names, 'Location', 'best', 'FontSize', 10, 'Box', 'off');
 
         % 添加数据标签
@@ -206,7 +206,7 @@ function create_energy_efficiency_plots(totalEDs_set, divisible_task_ratios, avg
         grid on;
         xlabel('可分割任務比例', 'FontSize', 12);
         ylabel('Proposal能效提升率 (%)', 'FontSize', 12);
-        title(sprintf('%d個終端設備下的能效提升率', totalEDs_set(ed_idx)), 'FontSize', 14);
+        title(sprintf('%d個UE下的能效提升率', totalEDs_set(ed_idx)), 'FontSize', 14);
         legend({'vs. TSM', 'vs. BAT'}, 'Location', 'best', 'FontSize', 10, 'Box', 'off');
 
         % 添加数据标签
