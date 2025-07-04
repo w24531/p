@@ -3,10 +3,10 @@ rng(0);
 
 %% === 載入優化配置 ===
 PROPOSAL_CONFIG = proposal_optimization_config();
-fprintf('已載入 Proposal 優化配置 v%s\n', PROPOSAL_CONFIG.version);
+fprintf('已載入 LAO-PT 優化配置 v%s\n', PROPOSAL_CONFIG.version);
 
 %% === 優化參數設置：強化分割效果與方法差異 ===
-simulation_times = 3;
+simulation_times = 50;
 time_slots       = 100;
 run_algo_fq      = 10;
 new_task_fq      = 8;
@@ -71,7 +71,7 @@ total_tasks_success_tsm    = zeros(1, length(divisible_task_ratios));
 total_tasks_success_bat    = zeros(1, length(divisible_task_ratios));
 total_tasks_generated      = zeros(1, length(divisible_task_ratios));
 
-fprintf('=== 整合比較：TSM vs Enhanced Proposal vs BAT（完成率+延遲+能耗）===\n');
+fprintf('=== 整合比較：TSM vs Enhanced LAO-PT vs BAT（完成率+延遲+能耗）===\n');
 
 for sim = 1:simulation_times
     fprintf('\n--- 模擬回合: %d/%d ---\n', sim, simulation_times);
@@ -85,7 +85,7 @@ for sim = 1:simulation_times
         
         divisible_ratio = divisible_task_ratios(ratio_idx);
         
-        % === 關鍵新增：根據分割比例動態調整 Proposal 參數 ===
+        % === 關鍵新增：根據分割比例動態調整 LAO-PT 參數 ===
         if divisible_ratio == 0.0
             % 0% 可分割：專注於完成率
             alpha_prop = 0.8;  % 提高時間緊急度權重
@@ -148,7 +148,7 @@ for sim = 1:simulation_times
                         [bat_ED,  bat_ES ] = copy_environment(ED_set_base, ES_set_base);
 
                         try
-                            % === Enhanced Proposal方法：應用優化策略 ===
+                            % === Enhanced LAO-PT方法：應用優化策略 ===
                             if ~isempty(newTK_prop)
                                 [prop_ES, task_set_prop] = enhanced_decentralized_collaboration(...
                                     prop_ES, task_set_prop, newTK_prop, time, PROPOSAL_CONFIG, divisible_ratio);
@@ -159,7 +159,7 @@ for sim = 1:simulation_times
                             load('prop_temp.mat', 'task_set');
                             task_set_prop = task_set; clear task_set;
                         catch ME
-                            fprintf('Enhanced Proposal執行錯誤: %s\n', ME.message);
+                            fprintf('Enhanced LAO-PT執行錯誤: %s\n', ME.message);
                         end
 
                         try
@@ -417,10 +417,10 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
         fprintf('--- Divisible Task Ratio: %.2f ---\n', ratio);
         for i = 1:length(totalEDs_set)
             ed = totalEDs_set(i);
-            p_rate = avg_props(r,i) * 100;    % Proposal 完成率（%）
+            p_rate = avg_props(r,i) * 100;    % LAO-PT 完成率（%）
             t_rate = avg_tsms(r,i)  * 100;    % TSM 完成率（%）
             b_rate = avg_bats(r,i)  * 100;    % BAT 完成率（%）
-            fprintf('UE數量 = %5d → TSM: %6.2f%%, Proposal: %6.2f%%, BAT: %6.2f%%\n', ...
+            fprintf('UE數量 = %5d → TSM: %6.2f%%, LAO-PT: %6.2f%%, BAT: %6.2f%%\n', ...
                     ed, t_rate, p_rate, b_rate);
         end
         
@@ -430,7 +430,7 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             sum_tsm  = total_tasks_success_tsm(r);
             sum_bat  = total_tasks_success_bat(r);
             tot_gen  = total_tasks_generated(r);
-            fprintf('[Proposal] 成功任務數：%d / %d\n', sum_prop, tot_gen);
+            fprintf('[LAO-PT] 成功任務數：%d / %d\n', sum_prop, tot_gen);
             fprintf('[TSM]      成功任務數：%d / %d\n', sum_tsm,  tot_gen);
             fprintf('[BAT]      成功任務數：%d / %d\n', sum_bat,  tot_gen);
         end
@@ -448,7 +448,7 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             p_cnt = avg_success_props(r,i);
             t_cnt = avg_success_tsms(r,i);
             b_cnt = avg_success_bats(r,i);
-            fprintf('UE數量 = %5d → TSM: %8.2f, Proposal: %8.2f, BAT: %8.2f\n', ...
+            fprintf('UE數量 = %5d → TSM: %8.2f, LAO-PT: %8.2f, BAT: %8.2f\n', ...
                     ed, t_cnt, p_cnt, b_cnt);
         end
         fprintf('\n');
@@ -461,7 +461,7 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
     avg_by_ed_bat  = mean(avg_success_bats, 1, 'omitnan');
     for i = 1:length(totalEDs_set)
         ed = totalEDs_set(i);
-        fprintf('UE數量 = %5d → TSM: %8.2f, Proposal: %8.2f, BAT: %8.2f\n', ...
+        fprintf('UE數量 = %5d → TSM: %8.2f, LAO-PT: %8.2f, BAT: %8.2f\n', ...
                 ed, avg_by_ed_tsm(i), avg_by_ed_prop(i), avg_by_ed_bat(i));
     end
     fprintf('\n');
@@ -473,10 +473,10 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
         fprintf('--- Divisible Task Ratio: %.2f ---\n', ratio);
         for i = 1:length(totalEDs_set)
             ed = totalEDs_set(i);
-            p_delay = avg_delay_props(r,i) * 1000;   % Proposal 延遲 (秒→毫秒)
+            p_delay = avg_delay_props(r,i) * 1000;   % LAO-PT 延遲 (秒→毫秒)
             t_delay = avg_delay_tsms(r,i)  * 1000;   % TSM 延遲
             b_delay = avg_delay_bats(r,i)  * 1000;   % BAT 延遲
-            fprintf('UE數量 = %5d → TSM: %6.2f ms, Proposal: %6.2f ms, BAT: %6.2f ms\n', ...
+            fprintf('UE數量 = %5d → TSM: %6.2f ms, LAO-PT: %6.2f ms, BAT: %6.2f ms\n', ...
                     ed, t_delay, p_delay, b_delay);
         end
         fprintf('\n');
@@ -489,10 +489,10 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
         fprintf('--- Divisible Task Ratio: %.2f ---\n', ratio);
         for i = 1:length(totalEDs_set)
             ed = totalEDs_set(i);
-            p_e = avg_energy_props(r,i);   % Proposal 總能耗
+            p_e = avg_energy_props(r,i);   % LAO-PT 總能耗
             t_e = avg_energy_tsms(r,i);    % TSM 總能耗
             b_e = avg_energy_bats(r,i);    % BAT 總能耗
-            fprintf('UE數量 = %5d → TSM: %8.2f J, Proposal: %8.2f J, BAT: %8.2f J\n', ...
+            fprintf('UE數量 = %5d → TSM: %8.2f J, LAO-PT: %8.2f J, BAT: %8.2f J\n', ...
                     ed, t_e, p_e, b_e);
         end
         fprintf('\n');
@@ -508,7 +508,7 @@ function display_results_integrated(divisible_task_ratios, totalEDs_set, ...
             p_eff = avg_eff_props(r,i);
             t_eff = avg_eff_tsms(r,i);
             b_eff = avg_eff_bats(r,i);
-            fprintf('UE數量 = %5d → TSM: %8.2f, Proposal: %8.2f, BAT: %8.2f\n', ...
+            fprintf('UE數量 = %5d → TSM: %8.2f, LAO-PT: %8.2f, BAT: %8.2f\n', ...
                     ed, t_eff, p_eff, b_eff);
         end
         fprintf('\n');
@@ -526,7 +526,7 @@ function create_integrated_plots(totalEDs_set, divisible_task_ratios, avg_tsms, 
     
     % 設定顏色
     colors = {[0.0 0.4470 0.7410], [0.8500 0.3250 0.0980], [0.4660 0.6740 0.1880]};
-    method_names = {'TSM', 'Proposal', 'BAT'};
+    method_names = {'TSM', 'LAO-PT', 'BAT'};
     
     % === 1. 綜合比較圖（三個指標併排）===
     for ratio_idx = 1:length(divisible_task_ratios)
@@ -636,7 +636,7 @@ function create_proposal_partition_plot(totalEDs_set, divisible_task_ratios, avg
     legend(labels, 'Location', 'Best', 'FontSize', 12);
     xlabel('Number of Edge Devices (EDs)', 'FontSize', 12);
     ylabel('Task Success Rate (%)', 'FontSize', 12);
-    title('Proposal Method: Success Rate vs Partition Ratios', 'FontSize', 14);
+    title('LAO-PT Method: Success Rate vs Partition Ratios', 'FontSize', 14);
     grid on;
     xticks(totalEDs_set);
     ylim([40 100]);
@@ -680,7 +680,7 @@ function create_tsm_partition_plot(totalEDs_set, divisible_task_ratios, avg_tsms
 end
 
 function [ES_set, task_set] = decentralized_collaboration(ES_set, task_set, newTK_set, current_time)
-    % === Proposal方法的去中心化協作機制 ===
+    % === LAO-PT方法的去中心化協作機制 ===
     % 實現論文中提到的分散式資源管理與多節點協作
     
     if isempty(newTK_set) || isempty(ES_set)

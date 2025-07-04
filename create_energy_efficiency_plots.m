@@ -4,7 +4,7 @@ function create_energy_efficiency_plots(totalEDs_set, divisible_task_ratios, avg
     %   totalEDs_set: 终端设备数量集合
     %   divisible_task_ratios: 可分割任务比例集合
     %   avg_eff_tsms: TSM方法能效比数据 (按分割比例和ED数量组织)
-    %   avg_eff_props: Proposal方法能效比数据
+    %   avg_eff_props: LAO-PT方法能效比数据
     %   avg_eff_bats: BAT方法能效比数据
     % 输出:
     %   生成并保存能效比比较图表
@@ -16,12 +16,12 @@ function create_energy_efficiency_plots(totalEDs_set, divisible_task_ratios, avg
     end
 
     % 设置颜色和线型
-    colors = {[0.0 0.4470 0.7410], [0.8500 0.3250 0.0980], [0.9290 0.6940 0.1250]};
+    colors = {[0.0 0.4470 0.7410], [0.8500 0.3250 0.0980], [0.4660 0.6740 0.1880]};
     markers = {'o', 's', 'd'};
-    line_styles = {'-', '--', ':'};
+    line_styles = {'-', '-', '-'};
 
     % 设置图例
-    method_names = {'TSM', 'Proposal', 'BAT'};
+    method_names = {'TSM', 'LAO-PT', 'BAT'};
 
     % 创建保存图表的文件夹
     if ~exist('results', 'dir')
@@ -205,7 +205,7 @@ function create_energy_efficiency_plots(totalEDs_set, divisible_task_ratios, avg
         % 设置图形属性
         grid on;
         xlabel('可分割任務比例', 'FontSize', 12);
-        ylabel('Proposal能效提升率 (%)', 'FontSize', 12);
+        ylabel('LAO-PT能效提升率 (%)', 'FontSize', 12);
         title(sprintf('%d個UE下的能效提升率', totalEDs_set(ed_idx)), 'FontSize', 14);
         legend({'vs. TSM', 'vs. BAT'}, 'Location', 'best', 'FontSize', 10, 'Box', 'off');
 
